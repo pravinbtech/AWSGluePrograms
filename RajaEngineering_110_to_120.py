@@ -311,3 +311,196 @@ display(my_Str_df)
 #df_with_num=new_df.select(col("JSONEXAMPLES.*"))
 #df_with_row_num=df_with_num.withColumn("RowId",row_number().over(w))
 
+
+# COMMAND ----------
+
+import plotly.graph_objects as go
+import plotly.io as io
+fig = go.Figure(
+    data=[go.Bar(y=[2, 1, 3])],
+    layout_title_text="A Figure Displaying Itself"
+)
+
+fig.write_image(file="my_figure.png", format="png")
+
+
+# COMMAND ----------
+
+dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC pip install chart_studio
+
+# COMMAND ----------
+
+smtp_server = 'smtp.gmail.com' # for e.g. 'smtp.sendgrid.net'
+smtp_port = 465
+smtp_user = 'pravinbtech@gmail.com'
+smtp_password = 'rvze bxbv mmmc jvux'
+email_sender = 'pravinbtech@gmail.com'
+email_receiver = 'priya.aaru1603@gmail.com'
+
+# COMMAND ----------
+
+def build_html_email_body(dataframes_list, pre_html_body = '', post_html_body = '', custom_css='', custom_css_class=None, max_rows_per_df=10):
+
+    '''
+    Author : Omkar Konnur
+    License : MIT
+
+    This function helps to compose an HTML email from your dataframes. Offers a few necessary customizations. Can be extended per your requirement.
+
+    dataframes_list     : list of dataframes to be sent in the email. for e.g [df1,df2,...]
+    pre_html_body       : Any html to be appended before the dataframe is displayed in the email. For e.g. '<p>Hi,</p>'
+    post_html_body      : Any html to be appended in the end of the email. For e.g. Signatures, closing comments, etc.
+    custom_css          : To format the table. Simply, this is the content of your CSS file. Note that the next parameter should pass the class defined in this CSS file.
+    custom_css_class    : Single class used to modify the table CSS. This can be done as shown in the doc above
+    max_rows_per_df     : Number of records in the dataframe sent in the email. Defaults to 10
+
+    Please note that not all CSS works in an email. To check the latest supported CSS please refer - https://developers.google.com/gmail/design/reference/supported_css
+    '''
+
+    html_sep = '<br>'
+    html_body = '<html><head><style>' + custom_css +'</style></head><body>' + "Hello welcome to Email from Pravinbtech@gmail.com your current usage charge is $100"
+    #html_body+=myhtml
+   
+
+    for df in dataframes_list:
+        df_count = df.count()
+        html_body += f'''
+                        <div class = 'table_header'>
+                            <h3>Dataframe Total Count : {df_count}</h3>
+                            <p> SHOWING MAX {max_rows_per_df} RECORDS FROM THE DATAFRAME </p>
+                        </div>
+                     '''
+        html_body += f'''
+                        <div class='table_wrapper'>
+                            {df.limit(max_rows_per_df).toPandas().to_html(classes=custom_css_class)}
+                        </div>
+                     ''' + html_sep
+
+    #html_body+=post_html_body+'</body></html>'
+    print(myhtml)
+    html_body=myhtml
+
+    return html_body
+
+
+def sendmail_html(smtp_server, smtp_port, smtp_user, smtp_password, sender_email, receiver_email, email_subject, email_body):
+    import smtplib, ssl
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from datetime import datetime
+
+    '''
+    Author : Omkar Konnur
+    License : MIT
+
+    This function sends email from your python environment. Accepts message type as HTML.
+
+    Usually the SMTP server details will be shared by your organization.
+    For testing, you can use your gmail account or use free email services like SendGrid. (https://sendgrid.com)
+
+    smtp_server        : SMTP Server (for e.g smtp.sendgrid.net)
+    smtp_port          : SMTP Port
+    smtp_user          : SMTP User
+    smtp_password      : SMTP User
+
+    sender_email       : Sender's email. Please verify the domains allowed by your SMTP server
+    receiver_email     : Receiver's email. In case of multiple recipients, provide a semi-colon seperated string with different emails
+    email_subject      : Subject Line. This function has been configured to pre-pend your Subject line with Timestamp and Cluster Name
+    email_body         : HTML string
+    '''
+
+    email_subject = f"{email_subject}"
+
+    email_message = MIMEMultipart()
+    email_message['From'] = sender_email
+    email_message['To'] = receiver_email
+    email_message['Subject'] = email_subject
+
+    email_message.attach(MIMEText(email_body, "html"))
+    email_string = email_message.as_string()
+
+    with smtplib.SMTP_SSL(smtp_server, smtp_port, context=ssl.create_default_context()) as server:
+        server.login(smtp_user, smtp_password)
+        server.sendmail(sender_email, receiver_email, email_string)
+
+# COMMAND ----------
+
+email_body = build_html_email_body([],custom_css=custom_table_style, custom_css_class='custom_table',max_rows_per_df=20)
+
+sendmail_html(smtp_server, smtp_port, smtp_user, smtp_password,
+            email_sender, email_receiver, 'My Awesome Dataframe with Custom Styling!',
+            email_body
+           )
+
+# COMMAND ----------
+
+custom_table_style = '''
+*{
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+}
+body{
+    font-family: Helvetica;
+    -webkit-font-smoothing: antialiased;
+}
+
+.table_header {
+    text-align: center;
+    background-color: #efefef;
+    padding: 10px;
+    margin: 0px 70px 0px 70px;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+.table_header p {
+    color: #9a8c98;
+    font-weight: light;
+}
+
+.table_wrapper {
+    margin: 0px 70px 10px 70px;
+}
+
+.custom_table {
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: normal;
+    border: thin solid #f2e9e4;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 100%;
+    white-space: nowrap;
+    background-color: #f2e9e4;
+    word-break: break-all;
+    word-wrap: break-word;
+}
+
+.custom_table td, .custom_table th {
+    text-align: center;
+    padding: 8px;
+}
+
+.custom_table td {
+    font-size: 12px;
+}
+
+.custom_table thead th {
+    color: #edede9;
+    background: #22223b;
+}
+'''
