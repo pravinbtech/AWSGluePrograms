@@ -321,12 +321,34 @@ fig = go.Figure(
     layout_title_text="A Figure Displaying Itself"
 )
 
-fig.write_image(file="my_figure.png", format="png")
+
 
 
 # COMMAND ----------
 
-dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
+import plotly.io as io
+genhtml=io.to_html(fig, include_plotlyjs='cdn', full_html=True)
+
+# COMMAND ----------
+
+import plotly.io as io
+
+with open('mygen.html', 'w') as f:
+
+ f.writelines(io.to_html(fig, include_plotlyjs='cnd', full_html=True))
+
+# COMMAND ----------
+
+import io
+import boto3
+png_data = io.BytesIO()
+fig.savefig(png_data)
+# Seek back to the start so boto3 uploads from the start of the data
+bits.seek(0)
+
+# Upload the data to S3
+s3 = boto3.client('s3')
+s3.put_object(Bucket="s3://raja-engineering-spark-training/Week_Training/", Key="results.png", Body=png_data)
 
 # COMMAND ----------
 
@@ -371,7 +393,7 @@ def build_html_email_body(dataframes_list, pre_html_body = '', post_html_body = 
     '''
 
     html_sep = '<br>'
-    html_body = '<html><head><style>' + custom_css +'</style></head><body>' + "Hello welcome to Email from Pravinbtech@gmail.com your current usage charge is $100"
+    #html_body = '<html><head><style>' + custom_css +'</style></head><body>' + "Hello welcome to Email from Pravinbtech@gmail.com your current usage charge is $100"
     #html_body+=myhtml
    
 
@@ -390,8 +412,8 @@ def build_html_email_body(dataframes_list, pre_html_body = '', post_html_body = 
                      ''' + html_sep
 
     #html_body+=post_html_body+'</body></html>'
-    print(myhtml)
-    html_body=myhtml
+    print(genhtml)
+    html_body=genhtml
 
     return html_body
 
